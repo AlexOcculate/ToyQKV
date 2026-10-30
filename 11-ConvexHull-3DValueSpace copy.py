@@ -21,7 +21,7 @@ class AttentionPull3DScene(ThreeDScene):
         )
         self.add(main_axes)
 
-        # Title Label in 3D Space (Fixed on screen frame layout)
+        # Title Label in Screen Space (Fixed position on screen)
         title = Tex("3D Multi-Angle Attention Pull", color=WHITE)
         title.scale(1.2)
         title.to_corner(UL)
@@ -78,22 +78,25 @@ class AttentionPull3DScene(ThreeDScene):
         self.add(xy_panel, xz_panel, yz_panel)
 
         # ---------------------------------------------------------
-        # 4. INSTANTIATE PLACEMENT DOTS & TEXT LABELS
+        # 4. INSTANTIATE PLACEMENT DOTS & BILLBOARD LABELS
         # ---------------------------------------------------------
         dots = VGroup()
-        labels = VGroup()
         shadow_dots = VGroup()
 
-        # FIX: Extract individual vector scalar values to prevent array inhomogeneity
+        # FIX: Map scalar coordinate positions component-by-component
+        # to ensure homogenous array shapes [X, Y, Z]
         def get_projected_points(vec3d):
-            xy_pt = np.array([vec3d[0] * 0.35, vec3d[1] * 0.35, -4.5])
-            xz_pt = np.array([vec3d[0] * 0.35, 4.5, vec3d[2] * 0.35])
-            yz_pt = np.array([-4.5, vec3d[1] * 0.35, vec3d[2] * 0.35])
+            x_scaled = vec3d[0] * 0.35
+            y_scaled = vec3d[1] * 0.35
+            z_scaled = vec3d[2] * 0.35
+
+            xy_pt = np.array([x_scaled, y_scaled, -4.5])
+            xz_pt = np.array([x_scaled, 4.5, z_scaled])
+            yz_pt = np.array([-4.5, y_scaled, z_scaled])
             return xy_pt, xz_pt, yz_pt
 
         # Trace variables for "bank" dynamic updating
         bank_dot = None
-        bank_label = None
         bank_xy_s = None
         bank_xz_s = None
         bank_yz_s = None
@@ -104,9 +107,7 @@ class AttentionPull3DScene(ThreeDScene):
 
             # Parent 3D nodes
             d = Dot3D(point=pt, color=col, radius=0.12)
-            lbl = Tex(name, color=col).scale(0.75).next_to(d, UP + RIGHT, buff=0.1)
             dots.add(d)
-            labels.add(lbl)
 
             # Projection markers
             xy_pt, xz_pt, yz_pt = get_projected_points(pt)
@@ -117,21 +118,30 @@ class AttentionPull3DScene(ThreeDScene):
 
             if name == "bank":
                 bank_dot = d
-                bank_label = lbl
                 bank_xy_s = s_xy
                 bank_xz_s = s_xz
                 bank_yz_s = s_yz
 
-        self.add(dots, shadow_dots, labels)
+        self.add(dots, shadow_dots)
 
-        # Native implementation for keeping 3D text facing the camera view matrix
-        def billboard_updater(m):
-            m.scale(1)  # Reset orientation state implicitly
-            m.rotate(self.camera.get_theta() + 90 * DEGREES, axis=OUT)
-            m.rotate(self.camera.get_phi(), axis=RIGHT)
+        # Native dynamic billboard labels (always look straight at the lens)
+        river_lbl = (
+            Tex("river", color=BLUE_D)
+            .scale(0.75)
+            .move_to(token_data["river"]["pos"] + UP * 0.3 + RIGHT * 0.3)
+        )
+        bank_lbl = (
+            Tex("bank", color=GOLD_D)
+            .scale(0.75)
+            .move_to(token_data["bank"]["pos"] + UP * 0.3 + RIGHT * 0.3)
+        )
+        muddy_lbl = (
+            Tex("muddy", color=RED_D)
+            .scale(0.75)
+            .move_to(token_data["muddy"]["pos"] + UP * 0.3 + RIGHT * 0.3)
+        )
 
-        for lbl in labels:
-            lbl.add_updater(billboard_updater)
+        self.add_fixed_orientation_mobjects(river_lbl, bank_lbl, muddy_lbl)
 
         self.wait(1)
 
@@ -155,7 +165,7 @@ class AttentionPull3DScene(ThreeDScene):
             bank_xy_s.move_to(xy_pt)
             bank_xz_s.move_to(xz_pt)
             bank_yz_s.move_to(yz_pt)
-            bank_label.next_to(mob, UP + RIGHT, buff=0.1)
+            bank_lbl.move_to(curr_pos + UP * 0.3 + RIGHT * 0.3)
 
         bank_dot.add_updater(update_projections)
 
