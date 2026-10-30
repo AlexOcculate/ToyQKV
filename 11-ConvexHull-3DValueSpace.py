@@ -65,35 +65,57 @@ class AttentionPull3DScene(ThreeDScene):
         # ---------------------------------------------------------
         # 3. CONSTRUCT PERSPECTIVE PROJECTION MULTI-PANELS
         # ---------------------------------------------------------
-        def create_projection_plane(normal, offset_distance, label_text, color):
+        billboard_plane_labels = VGroup()
+
+        def create_projection_plane(normal, offset_distance, label_text):
+            grid_color = (
+                "#5c2e00"
+                if label_text == "YZ View (Profile)"
+                else (TEAL_E if label_text == "XZ View (Frontal)" else PURPLE_E)
+            )
+
             plane = NumberPlane(
                 x_range=[-4, 4, 1],
                 y_range=[-4, 4, 1],
-                background_line_style={
-                    "stroke_color": color,
+                axis_config={
                     "stroke_width": 1,
-                    "stroke_opacity": 0.25,
+                    "color": GRAY_E,
+                    "include_numbers": False,
+                },
+                background_line_style={
+                    "stroke_color": grid_color,
+                    "stroke_width": 1,
+                    "stroke_opacity": 0.2,
                 },
             ).scale(0.35)
 
+            lbl = Tex(label_text, color=GRAY_D).scale(0.5)
+
             if np.array_equal(normal, IN):  # XY Plane
                 plane.move_to(np.array([0, 0, offset_distance]))
-            elif np.array_equal(normal, RIGHT):  # YZ Plane
+                lbl.next_to(plane, UP, buff=0.1)
+                self.add(plane)
+                billboard_plane_labels.add(lbl)
+
+            elif np.array_equal(normal, RIGHT):  # YZ Plane (Profile View)
                 plane.rotate(90 * DEGREES, axis=UP)
                 plane.move_to(np.array([offset_distance, 0, 0]))
-            elif np.array_equal(normal, UP):  # XZ Plane
+                lbl.move_to(np.array([offset_distance, 0, 1.6]))
+                self.add(plane)
+                billboard_plane_labels.add(lbl)
+
+            elif np.array_equal(normal, UP):  # XZ Plane (Frontal View)
                 plane.rotate(90 * DEGREES, axis=RIGHT)
                 plane.move_to(np.array([0, offset_distance, 0]))
+                lbl.move_to(np.array([0, offset_distance, 1.6]))
+                self.add(plane)
+                billboard_plane_labels.add(lbl)
 
-            lbl = Tex(label_text, color=GRAY_D).scale(0.5).next_to(plane, UP, buff=0.1)
-            return VGroup(plane, lbl)
+        create_projection_plane(IN, -4.5, "XY View (Top-Down)")
+        create_projection_plane(UP, 4.5, "XZ View (Frontal)")
+        create_projection_plane(RIGHT, -4.5, "YZ View (Profile)")
 
-        # Position tracking decks safely at background limits with dark, low-contrast hues
-        xy_panel = create_projection_plane(IN, -4.5, "XY View (Top-Down)", PURPLE_E)
-        xz_panel = create_projection_plane(UP, 4.5, "XZ View (Frontal)", TEAL_E)
-        yz_panel = create_projection_plane(RIGHT, -4.5, "YZ View (Profile)", "#5c2e00")
-
-        self.add(xy_panel, xz_panel, yz_panel)
+        self.add_fixed_orientation_mobjects(*billboard_plane_labels)
 
         # ---------------------------------------------------------
         # 4. INSTANTIATE PLACEMENT DOTS & BILLBOARD LABELS
@@ -101,8 +123,7 @@ class AttentionPull3DScene(ThreeDScene):
         dots = VGroup()
         shadow_dots = VGroup()
 
-        # FIX: Extract individual vector components safely by coordinate indices [0, 1, 2]
-        # to ensure uniform array shapes [Scalar, Scalar, Scalar]
+        # FIXED: Explicitly isolate index values component-by-component to prevent array shape nesting
         def get_projected_points(vec3d):
             x_scaled = vec3d[0] * 0.35
             y_scaled = vec3d[1] * 0.35
