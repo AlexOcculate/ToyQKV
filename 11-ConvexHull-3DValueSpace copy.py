@@ -9,7 +9,7 @@ class AttentionPull3DScene(ThreeDScene):
         # ---------------------------------------------------------
         self.set_camera_orientation(phi=65 * DEGREES, theta=-60 * DEGREES, zoom=0.85)
 
-        # 3D Main Axes
+        # Muted & Darkened 3D Main Axes
         main_axes = ThreeDAxes(
             x_range=[-4, 4, 1],
             y_range=[-4, 4, 1],
@@ -17,7 +17,7 @@ class AttentionPull3DScene(ThreeDScene):
             x_length=6,
             y_length=6,
             z_length=6,
-            axis_config={"stroke_width": 2, "color": GRAY_C},
+            axis_config={"stroke_width": 1, "color": GRAY_E},
         )
         self.add(main_axes)
 
@@ -26,6 +26,24 @@ class AttentionPull3DScene(ThreeDScene):
         title.scale(1.2)
         title.to_corner(UL)
         self.add_fixed_in_frame_mobjects(title)
+
+        # --- ADD AXES LABELS (Muted X, Y, Z Billboards) ---
+        x_label = (
+            Tex("X", color=GRAY_D)
+            .scale(0.5)
+            .move_to(main_axes.x_axis.get_end() + RIGHT * 0.25)
+        )
+        y_label = (
+            Tex("Y", color=GRAY_D)
+            .scale(0.5)
+            .move_to(main_axes.y_axis.get_end() + UP * 0.25)
+        )
+        z_label = (
+            Tex("Z", color=GRAY_D)
+            .scale(0.5)
+            .move_to(main_axes.z_axis.get_end() + OUT * 0.25)
+        )
+        self.add_fixed_orientation_mobjects(x_label, y_label, z_label)
 
         # ---------------------------------------------------------
         # 2. DEFINE THE EMBEDDING DATA POINTS (Spatially Spread)
@@ -67,13 +85,13 @@ class AttentionPull3DScene(ThreeDScene):
                 plane.rotate(90 * DEGREES, axis=RIGHT)
                 plane.move_to(np.array([0, offset_distance, 0]))
 
-            lbl = Tex(label_text, color=color).scale(0.5).next_to(plane, UP, buff=0.1)
+            lbl = Tex(label_text, color=GRAY_D).scale(0.5).next_to(plane, UP, buff=0.1)
             return VGroup(plane, lbl)
 
-        # Position tracking decks safely at background limits
-        xy_panel = create_projection_plane(IN, -4.5, "XY View (Top-Down)", PURPLE_A)
-        xz_panel = create_projection_plane(UP, 4.5, "XZ View (Frontal)", TEAL_A)
-        yz_panel = create_projection_plane(RIGHT, -4.5, "YZ View (Profile)", ORANGE)
+        # Position tracking decks safely at background limits with dark, low-contrast hues
+        xy_panel = create_projection_plane(IN, -4.5, "XY View (Top-Down)", PURPLE_E)
+        xz_panel = create_projection_plane(UP, 4.5, "XZ View (Frontal)", TEAL_E)
+        yz_panel = create_projection_plane(RIGHT, -4.5, "YZ View (Profile)", "#5c2e00")
 
         self.add(xy_panel, xz_panel, yz_panel)
 
@@ -83,8 +101,8 @@ class AttentionPull3DScene(ThreeDScene):
         dots = VGroup()
         shadow_dots = VGroup()
 
-        # FIX: Map scalar coordinate positions component-by-component
-        # to ensure homogenous array shapes [X, Y, Z]
+        # FIX: Extract individual vector components safely by coordinate indices [0, 1, 2]
+        # to ensure uniform array shapes [Scalar, Scalar, Scalar]
         def get_projected_points(vec3d):
             x_scaled = vec3d[0] * 0.35
             y_scaled = vec3d[1] * 0.35
