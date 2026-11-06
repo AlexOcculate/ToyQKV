@@ -1,9 +1,10 @@
 
 # [USER PROMPT]
 
-```text
-What is your suggestion of logical steps sequence, that built one on top of the other? But, I really would like to have a taste of add the W_Q, W_K, W_V layers on top of my saved embeddings and token dictionary before all, not necessarily deep, but at least start to finish.
-```
+> What is your suggestion of logical steps sequence, that built one on top of the other? 
+> But, I really would like to have a taste of add the W_Q, W_K, W_V layers on top of my saved embeddings and token dictionary before all, 
+> not necessarily deep, but at least start to finish.
+
 
 # [ASSISTANT PROMPT]
 
